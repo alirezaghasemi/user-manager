@@ -13,6 +13,7 @@ type Config struct {
 	Database Database
 	Redis    Redis
 	Swagger  Swagger
+	Goose    Goose
 }
 
 type Server struct {
@@ -44,6 +45,12 @@ type Redis struct {
 type Swagger struct {
 	Host    string   `envconfig:"SWAGGER_HOST_PORT" default:"127.0.0.1:6661"`
 	Schemas []string `envconfig:"SWAGGER_SCHEMA" default:"http"`
+}
+
+type Goose struct {
+	Driver       string `envconfig:"GOOSE_DRIVER"`
+	MigrationDIR string `envconfig:"GOOSE_MIGRATION_DIR"`
+	Table        string `envconfig:"GOOSE_TABLE"`
 }
 
 func Load(envPath string) (*Config, error) {

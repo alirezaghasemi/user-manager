@@ -1,6 +1,7 @@
 package command
 
 import (
+	"log"
 	"os"
 
 	"github.com/alirezaghasemi/user-manager/internal/config"
@@ -10,10 +11,10 @@ import (
 )
 
 var (
-	cfg     config.Config
+	Cfg     config.Config
 	envFile string
 	rootCmd = &cobra.Command{
-		Use: "",
+		Use: "user-manager",
 		Run: func(cmd *cobra.Command, args []string) {
 			initializeConfigs()
 		},
@@ -24,23 +25,26 @@ func initializeConfigs() {
 	if envFile != "" {
 		err := godotenv.Load(envFile)
 		if err != nil {
-			panic(err)
+			log.Fatalf("Error loading env file: %v", err)
 		}
 	} else {
 		_ = godotenv.Load()
 	}
 
-	err := envconfig.Process("", &cfg)
+	err := envconfig.Process("", &Cfg)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Error parsing config: %v", err)
 	}
 }
 
 func init() {
-	cobra.OnInitialize()
+	cobra.OnInitialize(initializeConfigs)
+
 	rootCmd.PersistentFlags().StringVarP(&envFile, "env-file", "e", ".env", ".env file")
 
 	rootCmd.AddCommand(helloCmd)
+
+	rootCmd.AddCommand(migrateCmd)
 }
 
 func Execute() {
