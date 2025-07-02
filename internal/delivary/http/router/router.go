@@ -20,5 +20,16 @@ func NewRouter(userHandler handler.UserHandler) *gin.Engine {
 	// Create User
 	userRouter.POST("", userHandler.Create)
 
+	// Get User
+	userRouter.GET("/:id", userHandler.FindByID)
+
+	// Update User
+	userRouter.PATCH("/:id", userHandler.Update)
+
+	// Get All Users
+	userRouter.GET("", userHandler.FindAll)
+
+	// Delete User
+	userRouter.DELETE("/:id", userHandler.Delete)
 	return router
 }
