@@ -45,6 +45,8 @@ func init() {
 	rootCmd.AddCommand(helloCmd)
 
 	rootCmd.AddCommand(migrateCmd)
+
+	rootCmd.AddCommand(httpCmd)
 }
 
 func Execute() {
