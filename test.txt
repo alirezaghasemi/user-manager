@@ -1,0 +1,106 @@
+package usecase
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"testing"
+
+	"github.com/alirezaghasemi/user-manager/internal/entities"
+	"github.com/alirezaghasemi/user-manager/internal/repository"
+	"github.com/go-playground/validator/v10"
+	"github.com/stretchr/testify/assert"
+)
+
+// mockUserRepository implements repository.UserRepository for testing
+type mockUserRepository struct {
+	FindByIDFunc func(ctx context.Context, id uint64) (entities.User, error)
+}
+
+func (m *mockUserRepository) Save(ctx context.Context, user entities.User) (entities.User, error) {
+	return entities.User{}, nil
+}
+func (m *mockUserRepository) FindByID(ctx context.Context, id uint64) (entities.User, error) {
+	return m.FindByIDFunc(ctx, id)
+}
+func (m *mockUserRepository) Update(ctx context.Context, user entities.User) (entities.User, error) {
+	return entities.User{}, nil
+}
+func (m *mockUserRepository) FindAll(ctx context.Context) ([]entities.User, error) {
+	return nil, nil
+}
+func (m *mockUserRepository) Delete(ctx context.Context, id uint64) error {
+	return nil
+}
+
+func TestUserUsecase_FindByID(t *testing.T) {
+	ctx := context.Background()
+	validate := validator.New()
+	expectedUser := entities.User{ID: 1, Name: "Test User"}
+
+	tests := []struct {
+		name         string
+		repoMock     func() repository.UserRepository
+		id           uint64
+		wantUser     entities.User
+		wantErr      error
+		wantErrIs    error
+	}{
+		{
+			name: "success",
+			repoMock: func() repository.UserRepository {
+				return &mockUserRepository{
+					FindByIDFunc: func(ctx context.Context, id uint64) (entities.User, error) {
+						return expectedUser, nil
+					},
+				}
+			},
+			id:       1,
+			wantUser: expectedUser,
+			wantErr:  nil,
+		},
+		{
+			name: "user not found",
+			repoMock: func() repository.UserRepository {
+				return &mockUserRepository{
+					FindByIDFunc: func(ctx context.Context, id uint64) (entities.User, error) {
+						return entities.User{}, repository.ErrMsgUserNotFound
+					},
+				}
+			},
+			id:        2,
+			wantUser:  entities.User{},
+			wantErrIs: ErrMsgUserNotFound,
+		},
+		{
+			name: "internal error",
+			repoMock: func() repository.UserRepository {
+				return &mockUserRepository{
+					FindByIDFunc: func(ctx context.Context, id uint64) (entities.User, error) {
+						return entities.User{}, errors.New("db error")
+					},
+				}
+			},
+			id:        3,
+			wantUser:  entities.User{},
+			wantErrIs: ErrMsgInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			uc := NewUserUsecase(tt.repoMock(), validate)
+			user, err := uc.FindByID(ctx, tt.id)
+
+			assert.Equal(t, tt.wantUser, user)
+			if tt.wantErr == nil && tt.wantErrIs == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				if tt.wantErrIs != nil {
+					assert.ErrorIs(t, err, tt.wantErrIs)
+				}
+			}
+		})
+	}
+}
