@@ -135,7 +135,7 @@ func runMigration(command string, version int64) {
 	fmt.Println(dbString)
 	db, err := goose.OpenDBWithDriver("postgres", dbString)
 	if err != nil {
-		log.Fatalf("failed to connect to database: %w", err)
+		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
