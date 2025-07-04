@@ -83,9 +83,7 @@ func TestUserUsecase_FindByID(t *testing.T) {
 	})
 
 	t.Run("InternalServerError", func(t *testing.T) {
-		genericError := errors.New("database error")
-
-		mockRepo.On("FindByID", ctx, userID).Return(entities.User{}, genericError).Once()
+		mockRepo.On("FindByID", ctx, userID).Return(entities.User{}, repository.ErrMsgInternalServerError).Once()
 
 		user, err := userUsecase.FindByID(ctx, userID)
 
@@ -133,9 +131,7 @@ func TestUserUsecase_FindAll(t *testing.T) {
 	})
 
 	t.Run("InternalServerError", func(t *testing.T) {
-		genericError := errors.New("database error")
-
-		mockRepo.On("FindAll", ctx).Return([]entities.User{}, genericError).Once()
+		mockRepo.On("FindAll", ctx).Return([]entities.User{}, repository.ErrMsgInternalServerError).Once()
 
 		users, err := userUsecase.FindAll(ctx)
 
@@ -144,4 +140,73 @@ func TestUserUsecase_FindAll(t *testing.T) {
 		assert.Equal(t, []entities.User{}, users)
 		mockRepo.AssertExpectations(t)
 	})
+}
+
+func TestUserUsecase_Create(t *testing.T) {
+	validate := validator.New()
+
+	mockRepo := &MockUserRepository{}
+
+	userUsecase := NewUserUsecase(mockRepo, validate)
+
+	ctx := context.Background()
+	createUser := entities.User{
+		ID:     1,
+		Name:   "Test User 1",
+		Family: "Test Family 1",
+		Email:  "test1@gmail.com",
+		Age:    31,
+	}
+
+	createdUser := entities.User{
+		ID:     1,
+		Name:   "Test User 1",
+		Family: "Test Family 1",
+		Email:  "test1@gmail.com",
+		Age:    31,
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		mockRepo.On("Save", ctx, createUser).Return(createdUser, nil).Once()
+
+		user, err := userUsecase.Create(ctx, createUser)
+
+		assert.NoError(t, err)
+		assert.Equal(t, createdUser, user)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("DuplicateUser", func(t *testing.T) {
+		mockRepo.On("Save", ctx, createUser).Return(entities.User{}, repository.ErrMsgDuplicateUser).Once()
+
+		_, err := userUsecase.Create(ctx, createUser)
+
+		assert.Error(t, err)
+		assert.True(t, errors.Is(err, ErrMsgDuplicateUser), "error should wrap usecase.ErrMsgDuplicateUser")
+		assert.True(t, errors.Is(err, repository.ErrMsgDuplicateUser), "error should wrap repository.ErrMsgDuplicateUser")
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("FailedToSaveUser", func(t *testing.T) {
+		mockRepo.On("Save", ctx, createUser).Return(entities.User{}, repository.ErrMsgFailedToSaveUser).Once()
+
+		_, err := userUsecase.Create(ctx, createUser)
+
+		assert.Error(t, err)
+		assert.True(t, errors.Is(err, ErrMsgFailedToSaveUser), "error should wrap usecase.ErrMsgFailedToSaveUser")
+		assert.True(t, errors.Is(err, repository.ErrMsgFailedToSaveUser), "error should wrap repository.ErrMsgFailedToSaveUser")
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("InternalServerError", func(t *testing.T) {
+		mockRepo.On("Save", ctx, createUser).Return(entities.User{}, repository.ErrMsgInternalServerError).Once()
+
+		_, err := userUsecase.Create(ctx, createUser)
+
+		assert.Error(t, err)
+		assert.True(t, errors.Is(err, ErrMsgInternalServerError), "error should wrap usecase.ErrMsgFailedToSaveUser")
+		assert.True(t, errors.Is(err, repository.ErrMsgInternalServerError), "error should wrap repository.ErrMsgFailedToSaveUser")
+		mockRepo.AssertExpectations(t)
+	})
+
 }
