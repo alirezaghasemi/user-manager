@@ -56,7 +56,7 @@ func TestUserUsecase_FindByID(t *testing.T) {
 		ID:     userID,
 		Name:   "Test User",
 		Family: "Test Family",
-		Email:  "test@gamil.com",
+		Email:  "test@gmail.com",
 		Age:    31,
 	}
 
@@ -92,6 +92,56 @@ func TestUserUsecase_FindByID(t *testing.T) {
 		assert.Error(t, err)
 		assert.True(t, errors.Is(err, ErrMsgInternalServerError))
 		assert.Equal(t, entities.User{}, user)
+		mockRepo.AssertExpectations(t)
+	})
+}
+
+func TestUserUsecase_FindAll(t *testing.T) {
+	validate := validator.New()
+
+	mockRepo := &MockUserRepository{}
+
+	userUsecase := NewUserUsecase(mockRepo, validate)
+
+	ctx := context.Background()
+
+	expectedUsers := []entities.User{
+		{
+			ID:     1,
+			Name:   "Test User 1",
+			Family: "Test Family 1",
+			Email:  "test1@gmail.com",
+			Age:    31,
+		},
+		{
+			ID:     2,
+			Name:   "Test User 2",
+			Family: "Test Family 2",
+			Email:  "test2@gmail.com",
+			Age:    3,
+		},
+	}
+
+	t.Run("Success", func(t *testing.T) {
+		mockRepo.On("FindAll", ctx).Return(expectedUsers, nil).Once()
+
+		users, err := userUsecase.FindAll(ctx)
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedUsers, users)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("InternalServerError", func(t *testing.T) {
+		genericError := errors.New("database error")
+
+		mockRepo.On("FindAll", ctx).Return([]entities.User{}, genericError).Once()
+
+		users, err := userUsecase.FindAll(ctx)
+
+		assert.Error(t, err)
+		assert.True(t, errors.Is(err, ErrMsgInternalServerError))
+		assert.Equal(t, []entities.User{}, users)
 		mockRepo.AssertExpectations(t)
 	})
 }
