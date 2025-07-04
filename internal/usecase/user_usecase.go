@@ -107,8 +107,8 @@ func (u *userUsecase) FindAll(ctx context.Context) ([]entities.User, error) {
 func (u *userUsecase) Delete(ctx context.Context, id uint64) error {
 	err := u.repo.Delete(ctx, id)
 	if err != nil {
-		if errors.Is(err, repository.ErrMsgDuplicateUser) {
-			return fmt.Errorf("%w:%w", ErrMsgDuplicateUser, err)
+		if errors.Is(err, repository.ErrMsgUserNotFound) {
+			return fmt.Errorf("%w:%w", ErrMsgUserNotFound, err)
 		}
 
 		return fmt.Errorf("%w:%w", ErrMsgInternalServerError, err)
